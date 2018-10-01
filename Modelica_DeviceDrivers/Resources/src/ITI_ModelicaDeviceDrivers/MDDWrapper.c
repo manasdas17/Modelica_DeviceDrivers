@@ -20,7 +20,6 @@
 */
 
 #define ITI_MDD
-#define MDDSHAREDLIBRARY
 #include "../../Include/MDDBeep.h"
 #include "../../Include/MDDJoystick.h"
 #include "../../Include/MDDKeyboard.h"
@@ -31,6 +30,5 @@
 #include "../../Include/MDDSharedMemory.h"
 #include "../../Include/MDDUDPSocket.h"
 #include "../../Include/MDDUtilities.h"
-#include "../../Include/MDDUtilitiesMAC.h"
-#include "../../Include/MDDUtilitiesUUID.h"
 #include "../../Include/MDDTCPIPSocket.h"
+#undef ITI_MDD

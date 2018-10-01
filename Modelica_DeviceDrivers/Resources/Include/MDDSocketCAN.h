@@ -92,7 +92,7 @@ typedef struct {
     int runReceive; /**< Run receiving thread as long as runReceive != 0  */
 } MDDSocketCAN;
 
-void* MDD_socketCANRxThread(void* p_mDDSocketCAN);
+int MDD_socketCANRxThread(MDDSocketCAN * mDDSocketCAN);
 
 /** Create RAW can socket and bind it to the CAN network interface ifname
  *
@@ -123,7 +123,7 @@ void* MDD_socketCANConstructor(const char* ifname) {
     if (ioctl(mDDSocketCAN->skt, SIOCGIFINDEX, &(mDDSocketCAN->ifr)) == -1) {
         ModelicaFormatError("MDDSocketCAN.h: ioctl failure (%s)\n", strerror(errno));
     }
-    ModelicaMessage("\tOK\n");
+    ModelicaFormatMessage("\tOK\n", ifname);
 
     /* Select that CAN interface, and bind the socket to it. */
     ModelicaFormatMessage("SocketCAN (%s): Bind socket (descriptor %d) to interface %s ...",
@@ -135,7 +135,7 @@ void* MDD_socketCANConstructor(const char* ifname) {
         ModelicaFormatError("MDDSocketCAN.h: bind failure (%s)\n", strerror(errno));
     }
     else {
-        ModelicaMessage("\tOK\n");
+        ModelicaFormatMessage("\tOK\n");
     }
 
     /* Create map for storing frame identifiers as keys and pointers to the corresponding frame payload data
@@ -150,9 +150,9 @@ void* MDD_socketCANConstructor(const char* ifname) {
 
     /* Start dedicated receiver thread */
     mDDSocketCAN->runReceive = 1;
-    ret = pthread_create(&mDDSocketCAN->thread, 0, MDD_socketCANRxThread, mDDSocketCAN);
+    ret = pthread_create(&mDDSocketCAN->thread, 0, (void *) MDD_socketCANRxThread, mDDSocketCAN);
     if (ret) {
-        ModelicaFormatError("MDDSocketCAN.h: pthread_create(..) failed\n");
+        ModelicaFormatError("MDDSocketCAN.h: pthread(..) failed\n");
     }
 
     return mDDSocketCAN;
@@ -235,11 +235,9 @@ void MDD_socketCANWrite(void* p_mDDSocketCAN, int can_id, int can_dlc,
         if (bytes_sent == -1)
             ModelicaFormatError("MDDSocketCAN.h: write() of CAN ID %d to %s failed (%s)\n",
                                 can_id, mDDSocketCAN->ifr.ifr_name, strerror(errno));
-        else {
-            unsigned long size = (unsigned long)sizeof(txframe);
-            ModelicaFormatError("MDDSocketCAN.h: write() CAN ID %d to %s only wrote %lu of %lu bytes\n",
-                                can_id, mDDSocketCAN->ifr.ifr_name, (unsigned long)bytes_sent, size);
-        }
+        else
+            ModelicaFormatError("MDDSocketCAN.h: write() CAN ID %d to %s only wrote %d of %d bytes\n",
+                                can_id, mDDSocketCAN->ifr.ifr_name, bytes_sent, sizeof(txframe));
     }
 }
 
@@ -307,10 +305,9 @@ void MDD_socketCANReadP(void* p_mDDSocketCAN, int can_id, int can_dlc,
 /** Dedicated thread for receiving CAN frames.
  *
  * @param[in] mDDSocketCAN pointer to external object (MDDSocketCAN struct)
- * @return NULL (if thread stopped by mDDSocketCAN->runReceive == 0)
+ * @return 0 (if thread stopped by mDDSocketCAN->runReceive == 0)
  */
-void* MDD_socketCANRxThread(void* p_mDDSocketCAN) {
-    MDDSocketCAN * mDDSocketCAN = (MDDSocketCAN *) p_mDDSocketCAN;
+int MDD_socketCANRxThread(MDDSocketCAN * mDDSocketCAN) {
     struct can_frame rxframe;
     int bytes_read, ret;
     void * data;
@@ -364,7 +361,7 @@ void* MDD_socketCANRxThread(void* p_mDDSocketCAN) {
                 ModelicaFormatError("MDDSocketCAN.h: Poll returned %d. That should not happen.\n", ret);
         }
     }
-    return NULL;
+    return 0;
 }
 
 /** Dedicated thread for receiving CAN frames.
@@ -375,8 +372,7 @@ void* MDD_socketCANRxThread(void* p_mDDSocketCAN) {
  * @param[in] mDDSocketCAN pointer to external object (MDDSocketCAN struct)
  * @return 0 (if thread stopped by mDDSocketCAN->runReceive == 0)
  */
-int MDD_socketCANRxThread_DEPRECATED(void* p_mDDSocketCAN) {
-    MDDSocketCAN * mDDSocketCAN = (MDDSocketCAN *) p_mDDSocketCAN;
+int MDD_socketCANRxThread_DEPRECATED(MDDSocketCAN * mDDSocketCAN) {
     struct can_frame rxframe;
     int bytes_read, ret;
     void * data;

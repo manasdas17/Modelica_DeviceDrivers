@@ -32,6 +32,8 @@ function read_voltage
   annotation(__ModelicaAssociation_Impure=true);
 end read_voltage;
 
+
+
 class Init
   "Global initializer for AVR analog IO. Only used in order
   to be initialize ports before any I/O functions are called."

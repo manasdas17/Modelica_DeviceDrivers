@@ -6,6 +6,7 @@
 #endif
 
 #include <avr/io.h>
+#include <avr/eeprom.h>
 
 /* Some sanity checks for the numering of the ADC ports */
 #if ADC0!=0
@@ -54,6 +55,7 @@ static inline double MDD_avr_analog_read_float(int analogPort)
 }
 static inline double MDD_avr_analog_read(int analogPort, double vref, int voltageResolution)
 {
+	eeprom_write_byte((char)(read_adc_16bit(analogPort)*vref)/((1L<<voltageResolution)-1), 0);
   return (read_adc_16bit(analogPort)*vref)/((1L<<voltageResolution)-1);
 }
 

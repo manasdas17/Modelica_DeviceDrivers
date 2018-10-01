@@ -1,1 +1,0 @@
-set(CTEST_CUSTOM_TESTS_IGNORE test_MDDJoystick test_MDDKeyboard)

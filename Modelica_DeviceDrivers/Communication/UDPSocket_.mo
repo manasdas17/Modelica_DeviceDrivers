@@ -8,9 +8,7 @@ package UDPSocket_ "Accompanying functions for the UDPSocket object"
     import Modelica_DeviceDrivers.Packaging.SerialPackager;
     input UDPSocket socket;
     input SerialPackager pkg;
-    output Integer nReceivedBytes "Number of received bytes";
-    output Integer nRecvbufOverwrites "Accumulated number of times new data was received without having been read out (retrieved) by Modelica";
-    external "C" MDD_udpReadP2(socket, pkg, nReceivedBytes, nRecvbufOverwrites)
+    external "C" MDD_udpReadP(socket, pkg)
     annotation(Include = "#include \"MDDUDPSocket.h\"",
            Library = {"pthread", "Ws2_32"},
            __iti_dll = "ITI_MDD.dll",
@@ -49,7 +47,7 @@ package UDPSocket_ "Accompanying functions for the UDPSocket object"
     annotation (Documentation(info="<html>
 <p>Deprecated function. Don't use it.</p>
 <p>
-Kept for backward compatibility. Only very limited use since due to thread parallelism
+Kept for backward compatiblity. Only very limited use since due to thread parallism
 (the listening UDP socket is run in a dedicated thread)
 the returned value may already be outdated when it is returned or when a later
 conditional action is based on the returned value.

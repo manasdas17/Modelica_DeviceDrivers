@@ -1,10 +1,10 @@
 /** Synchronize execution with real-time (header-only library).
  *
  * @file
- * @author      tbellmann (Windows)
- * @author      bernhard-thiele (Linux)
+ * @author		tbellmann (Windows)
+ * @author		bernhard-thiele (Linux)
  * @author    tbeu
- * @since       2012-05-29
+ * @since		2012-05-29
  * @copyright see Modelica_DeviceDrivers project's License.txt file
  */
 
@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include "../src/include/CompatibilityDefs.h"
 
-#pragma comment( lib, "Winmm.lib" )
+#pragma comment( lib, "winmm.lib" )
 
 #if !defined(BELOW_NORMAL_PRIORITY_CLASS)
 #define BELOW_NORMAL_PRIORITY_CLASS 0x00004000
@@ -171,7 +171,6 @@ typedef struct {
     double lastSimTime;
     double lastIntegratorTimeStep;
     double lastCalculationTime;
-    double lastSyncTime; /* last (potentially scaled) syncronization time */
 } RTSync;
 
 DllExport void* MDD_realtimeSynchronizeConstructor(void) {
@@ -188,7 +187,6 @@ DllExport void* MDD_realtimeSynchronizeConstructor(void) {
         rtSync->lastSimTime = 0.;
         rtSync->lastIntegratorTimeStep = 0.;
         rtSync->lastCalculationTime = 0.;
-        rtSync->lastSyncTime = 0.;
     }
     timeBeginPeriod(1);
     return (void*) rtSync;
@@ -218,31 +216,23 @@ DllExport double MDD_getTimeMS(double dummy) {
  *
  * @param[in] Real-time synchronization object
  * @param[in] simTime (s) simulation time
- * @param[in] enableScaling if true enable real-time scaling, else disable scaling
- * @param[in] scaling real-time scaling factor; > 1 means the simulation is made slower than real-time
- * @param[out] availableTime time that is left before realtime deadline is reached BUG Windows-Linux implementation differ!
+ * @param[out] availableTime time that is left before realtime deadline is reached.
  * @return (s) Time between invocation of this function, i.e. "computing time" in seconds
  */
-DllExport double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int enableScaling, double scaling, double * integratorTimeStep) {
+DllExport double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, double * integratorTimeStep) {
     double calculationTime = 0.;
     RTSync* rtSync = (RTSync*) rtSyncObj;
     if (rtSync && integratorTimeStep) {
         *integratorTimeStep = rtSync->lastIntegratorTimeStep;
         if (simTime != rtSync->lastSimTime) {
             LARGE_INTEGER now;
-            double timeLeft, syncTime;
+            double timeLeft;
             QueryPerformanceCounter(&now);
             calculationTime = (double)(now.QuadPart * 1e6 - rtSync->lastTime.QuadPart * 1e6)/(double)rtSync->frequency.QuadPart*1.e-6;
-
             *integratorTimeStep = simTime - rtSync->lastSimTime;
-
-            /* scaled syncronization time. "scaling > 1" means the simulation takes longer than real-time.
-               No scaling => syncTime == simTime */
-            syncTime = enableScaling ? rtSync->lastSyncTime + (simTime - rtSync->lastSimTime)*scaling : simTime;
-
             do {
                 QueryPerformanceCounter(&now);
-                timeLeft = syncTime - (double)(now.QuadPart - rtSync->startTime.QuadPart)/(double)rtSync->frequency.QuadPart;
+                timeLeft = simTime - (double)(now.QuadPart - rtSync->startTime.QuadPart)/(double)rtSync->frequency.QuadPart;
                 if (timeLeft > 0) {
                     if (timeLeft > 0.002) {
                         Sleep(1);
@@ -259,7 +249,6 @@ DllExport double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int en
             rtSync->lastSimTime = simTime;
             rtSync->lastIntegratorTimeStep = *integratorTimeStep;
             rtSync->lastCalculationTime = calculationTime;
-            rtSync->lastSyncTime = syncTime;
         }
         else {
             calculationTime = rtSync->lastCalculationTime;
@@ -386,15 +375,9 @@ void MDD_setPriority(void* dummyPrioObj, int priority) {
 typedef struct {
     struct timespec t_start;
     struct timespec t_clockRealtime; /* current/last time of real time clock */
-    double lastSimTime; /* last simulation time */
-    double lastSyncTime; /* last (potentially scaled) syncronization time */
 } RTSync;
 
-/** RTSync constructor
- *
- * @return RTSync object
- */
-void* MDD_realtimeSynchronizeConstructor() {
+void* MDD_realtimeSynchronizeConstructor(void) {
     RTSync* rtSync = (RTSync*) malloc(sizeof(RTSync));
     if (rtSync) {
         int ret = clock_gettime(CLOCK_MONOTONIC, &rtSync->t_start);
@@ -404,8 +387,6 @@ void* MDD_realtimeSynchronizeConstructor() {
             ModelicaError("MDDRealtimeSynchronize.h: clock_gettime(..) failed\n");
         }
         rtSync->t_clockRealtime = rtSync->t_start;
-        rtSync->lastSimTime = 0; /* Presume we start from initial time = 0 */
-        rtSync->lastSyncTime = 0; /* Presume we start from initial time = 0 */
     }
     return (void*) rtSync;
 }
@@ -421,18 +402,16 @@ void MDD_realtimeSynchronizeDestructor(void* rtSyncObj) {
  *
  * @param[in] Real-time synchronization object
  * @param[in] simTime (s) simulation time
- * @param[in] enableScaling if true enable real-time scaling, else disable scaling
- * @param[in] scaling real-time scaling factor; > 1 means the simulation is made slower than real-time
- * @param[out] availableTime time that is left before realtime deadline is reached BUG Windows-Linux implementation differ!
+ * @param[out] availableTime time that is left before realtime deadline is reached.
  * @return (s) Time between invocation of this function, i.e. "computing time" in seconds
  */
-double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int enableScaling, double scaling, double * availableTime) {
+double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, double * availableTime) {
     double deltaTime = 0.;
-    RTSync* rtSync = (RTSync*) rtSyncObj;
+	RTSync* rtSync = (RTSync*) rtSyncObj;
     if (rtSync && availableTime) {
         struct timespec t_abs; /* Absolute time until which execution will be delayed (to catch up with real-time) */
-        double fractpart, intpart, syncTime;
-        int ret;
+        double fractpart, intpart;
+		int ret;
 
         /* save away value of last time that the real-time clock was inquired */
         deltaTime = rtSync->t_clockRealtime.tv_sec + (double)rtSync->t_clockRealtime.tv_nsec/NSEC_PER_SEC;
@@ -442,12 +421,8 @@ double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int enableScalin
          * old value of the real-time clock from the current (new) value of the real-time clock */
         deltaTime = (rtSync->t_clockRealtime.tv_sec + (double)rtSync->t_clockRealtime.tv_nsec/NSEC_PER_SEC) - deltaTime;
 
-        /* scaled syncronization time. "scaling > 1" means the simulation takes longer than real-time.
-           No scaling => syncTime == simTime */
-        syncTime = enableScaling ? rtSync->lastSyncTime + (simTime - rtSync->lastSimTime)*scaling : simTime;
-
-        /* convert (scaled) simulation time to corresponding real-time clock value */
-        fractpart = modf(syncTime, &intpart);
+        /* convert simulation time to corresponding real-time clock value */
+        fractpart = modf(simTime, &intpart);
         t_abs.tv_sec = rtSync->t_start.tv_sec + (time_t) intpart;
         t_abs.tv_nsec = rtSync->t_start.tv_nsec + (long) floor(fractpart*NSEC_PER_SEC);
         while (t_abs.tv_nsec >= NSEC_PER_SEC) {
@@ -460,7 +435,7 @@ double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int enableScalin
         /* printf("t_abs.tv_sec: %d, t_cr.tv_sec: %d, t_abs.tv_nsec: %d, t_cr.tv_nsec: %d\n",
             t_abs.tv_sec, rtSync->t_clockRealtime.tv_sec, t_abs.tv_nsec, rtSync->t_clockRealtime.tv_nsec); */
 
-        /* wait until (scaled) simulation time == real-time */
+        /* wait until simulation time == real-time */
         ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t_abs, NULL);
         if (ret) {
             ModelicaError("MDDRealtimeSynchronize.h: clock_nanosleep(..) failed\n");
@@ -468,8 +443,6 @@ double MDD_realtimeSynchronize(void* rtSyncObj, double simTime, int enableScalin
 
         /* get value the current time of the real-time clock (should be equal to t_abs if everything is OK) */
         clock_gettime(CLOCK_MONOTONIC, &rtSync->t_clockRealtime);
-        rtSync->lastSimTime = simTime;
-        rtSync->lastSyncTime = syncTime;
     }
 
     return deltaTime;

@@ -17,4 +17,3 @@ TestInputKeyboardKey
 TestHardwareIOComedi
 TestSerialPackager_TCPIP
 TestSerialPackager_LCM
-TestSerialPackager_MQTT

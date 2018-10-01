@@ -6,8 +6,5 @@
  *
  *
 */
-
 #define MDDSOFTINGCANUSECMAKE
-#define ITI_MDD
-#define MDDSHAREDLIBRARY
 #include "../../Include/MDDSoftingCAN.h"

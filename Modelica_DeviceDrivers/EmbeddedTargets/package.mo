@@ -1,5 +1,5 @@
 within Modelica_DeviceDrivers;
-package EmbeddedTargets "This package contains code for platform-specific targets, such as microcontrollers"
+package EmbeddedTargets
   extends Utilities.Icons.GenericICPackage;
   annotation (
    preferredView="info",

@@ -38,6 +38,8 @@ extends Modelica.Icons.Example;
     annotation (Placement(transformation(extent={{32,-76},{52,-56}})));
   Modelica.Blocks.Sources.BooleanPulse booleanPulse(period=0.2)
     annotation (Placement(transformation(extent={{-80,-78},{-60,-58}})));
+  OperatingSystem.SynchronizeRealtime synchronizeRealtime1 annotation(
+    Placement(visible = true, transformation(origin = {-76, 76}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 equation
   connect(integerExpression.y, packInt.u) annotation (Line(
       points={{-63,40},{-46,40}},

@@ -15,7 +15,8 @@ package Interfaces
           initialScale=0.2), graphics={Rectangle(
             extent={{-100,40},{100,-40}},
             fillColor={255,255,0},
-            fillPattern=FillPattern.Sphere),
+            fillPattern=FillPattern.Sphere,
+            pattern=LinePattern.None),
           Line(
             points={{-100,-40},{0,40},{100,-40}},
             color={95,95,95}),
@@ -40,7 +41,8 @@ package Interfaces
           initialScale=0.2), graphics={Rectangle(
             extent={{-100,40},{100,-40}},
             fillColor={255,255,0},
-            fillPattern=FillPattern.Sphere),
+            fillPattern=FillPattern.Sphere,
+            pattern=LinePattern.None),
           Line(
             points={{-100,40},{0,-40},{100,40}},
             color={95,95,95}),

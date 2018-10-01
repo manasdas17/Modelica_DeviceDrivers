@@ -6,7 +6,4 @@
  *
  *
 */
-
-#define ITI_MDD
-#define MDDSHAREDLIBRARY
 #include "../../Include/MDDLCM.h"
